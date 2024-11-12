@@ -1,2 +1,2 @@
-web: npm run start
-worker: cd frontend && npm run preview
+web: cd frontend && npm run preview
+worker: npm run start
