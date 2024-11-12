@@ -75,14 +75,17 @@ const PORT = process.env.PORT || 3000;
 // Start the server and initialize the assistant
 async function main() {
     try {
+        // Start the server first
+        const server = app.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+
+        // Then initialize the assistant
         console.log('Initializing Brighter Shores Assistant...');
         assistant = new BrighterShoresAssistant();
         await assistant.initialize();
+        isInitialized = true;  // Add this line to mark initialization as complete
         console.log('Assistant initialization complete!');
-
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
     } catch (error) {
         console.error('Error during initialization:', error.message);
         // Don't exit the process on error, just log it
