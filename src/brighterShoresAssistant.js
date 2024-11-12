@@ -121,9 +121,13 @@ Remember: Players need practical, actionable information that helps them navigat
             throw new Error("Assistant not initialized. Please call initialize() first.");
         }
 
+        const retriever = this.vectorStore.asRetriever();
+        retriever.k = 15; // Increase the number of documents to retrieve
+        retriever.relevanceScoreCutoff = 0.7; // Adjust relevance score cutoff
+
         const chain = RetrievalQAChain.fromLLM(
             this.model,
-            this.vectorStore.asRetriever(),
+            retriever,
             {
                 returnSourceDocuments: true,
                 verbose: true

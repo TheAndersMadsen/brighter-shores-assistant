@@ -4,6 +4,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { Config } = require('./config');
 require('dotenv').config();
+const wtf = require('wtf_wikipedia');
 
 class WikiScraper {
     constructor() {
@@ -80,9 +81,20 @@ class WikiScraper {
             const revision = page.revisions[0];
             const content = revision.slots.main.content;
 
+            // Parse the content using wtf_wikipedia
+            const doc = wtf(content);
+
+            // Extract plain text content
+            const plainText = doc.text();
+
+            // Extract tables and convert them to JSON
+            const tables = doc.tables();
+            const structuredData = tables.map(table => table.json());
+
             return {
                 title: page.title,
-                content: content,
+                content: plainText,
+                tables: structuredData,
                 url: page.canonicalurl,
                 last_modified: revision.timestamp,
                 categories: page.categories ? page.categories.map(cat => cat.title) : []
