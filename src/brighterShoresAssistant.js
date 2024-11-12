@@ -102,14 +102,8 @@ Remember: Players need practical, actionable information that helps them navigat
             });
         });
 
-        // Split text into smaller chunks
-        const textSplitter = new RecursiveCharacterTextSplitter({
-            chunkSize: 1000,
-            chunkOverlap: 200,
-        });
-
-        console.log("Splitting documents...");
-        const splitDocs = await textSplitter.splitDocuments(documents);
+        // Skip splitting
+        const splitDocs = documents;
 
         // Create vector store
         console.log("Creating vector store...");
