@@ -19,6 +19,11 @@ async function initializeAssistant() {
 
 // POST endpoint to ask questions
 app.post('/api/ask', async (req, res) => {
+    if (!isInitialized) {
+        return res.status(503).json({ 
+            error: 'Assistant is still initializing. Please try again in a few minutes.' 
+        });
+    }
     try {
         const { question } = req.body;
         
@@ -62,17 +67,38 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = process.env.PORT || 3000;
 
-// Start the server and initialize the assistant
-async function main() {
+// Start the server immediately
+const app = express();
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+
+// Initialize the assistant in the background
+async function initializeInBackground() {
     try {
+        console.log("Starting assistant initialization in background...");
         await initializeAssistant();
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
+        console.log("Assistant initialization complete!");
     } catch (error) {
-        console.error('Error:', error.message);
-        process.exit(1);
+        console.error('Error during initialization:', error.message);
+        // Don't exit the process on error, just log it
+        // process.exit(1);
     }
 }
 
-main();
+// Start initialization in background
+initializeInBackground();
+
+// Add a health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'Server is running' });
+});
+
+// Add an initialization status endpoint
+let isInitialized = false;
+app.get('/api/status', (req, res) => {
+    res.json({ 
+        initialized: isInitialized,
+        message: isInitialized ? 'Assistant is ready' : 'Assistant is still initializing'
+    });
+});
