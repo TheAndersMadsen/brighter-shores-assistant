@@ -37,6 +37,7 @@ ITEM QUESTIONS
 - Mention any related quests or uses
 - Note if it's tradeable or bankable
 - Include approximate costs if purchasable
+- Include relevant professions and associated skills or knowledge for further context
 
 PROFESSION QUESTIONS
 - Detail optimal leveling locations and methods
@@ -102,7 +103,7 @@ Remember: Players need practical, actionable information that helps them navigat
             });
         });
 
-        // Skip splitting
+        // Skip splitting to keep documents intact
         const splitDocs = documents;
 
         // Create vector store
