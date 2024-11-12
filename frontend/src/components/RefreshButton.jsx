@@ -1,5 +1,7 @@
 import { Button } from '@chakra-ui/react';
 import { useState } from 'react';
+import { refreshKnowledge } from '../services/api';
+
 
 function RefreshButton() {
   const [isLoading, setIsLoading] = useState(false);
@@ -7,12 +9,7 @@ function RefreshButton() {
   const handleRefresh = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/refresh', {
-        method: 'POST',
-      });
-      if (!response.ok) {
-        throw new Error('Failed to refresh knowledge base');
-      }
+      await refreshKnowledge();
     } catch (error) {
       console.error('Error refreshing knowledge base:', error);
     } finally {
