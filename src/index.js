@@ -6,7 +6,11 @@ const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: process.env.NODE_ENV === 'production' ? false : 'http://localhost:5173',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    credentials: true
+}));
 
 // Initialize the assistant outside of the route handler so it can be reused
 let assistant;
@@ -60,6 +64,55 @@ app.post('/api/refresh', async (req, res) => {
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+app.post('/api/ask/stream', async (req, res) => {
+    console.log('Stream request received');
+    if (!isInitialized) {
+        return res.status(503).json({ 
+            error: 'Assistant is still initializing. Please try again in a few minutes.' 
+        });
+    }
+
+    try {
+        const { question } = req.body;
+        
+        if (!question) {
+            return res.status(400).json({ error: 'Question is required' });
+        }
+
+        // Set headers for SSE
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
+        });
+
+        // Stream the response
+        await assistant.askQuestionStream(question, (chunk) => {
+            console.log('Streaming chunk:', chunk);
+            res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
+        });
+
+        // Get and send sources after the text stream is complete
+        const sources = await assistant.getRelevantSources(question);
+        res.write(`data: ${JSON.stringify({ sources })}\n\n`);
+        
+        // Send done signal
+        res.write('data: [DONE]\n\n');
+        res.end();
+
+    } catch (error) {
+        console.error('Stream error:', error);
+        // If headers haven't been sent yet, send error response
+        if (!res.headersSent) {
+            res.status(500).json({ error: 'Internal server error' });
+        } else {
+            // If streaming has started, send error in stream format
+            res.write(`data: ${JSON.stringify({ error: 'Internal server error' })}\n\n`);
+            res.end();
+        }
     }
 });
 

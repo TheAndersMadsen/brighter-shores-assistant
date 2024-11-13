@@ -10,7 +10,12 @@ import {
   HStack,
 } from '@chakra-ui/react';
 import ChatMessage from './ChatMessage';
-import { askQuestion } from '../services/api';
+import { askQuestionStream } from '../services/api';
+
+const MessageType = {
+  USER: 'user',
+  ASSISTANT: 'assistant'
+};
 
 function Chat() {
   const [messages, setMessages] = useState(() => {
@@ -30,28 +35,59 @@ function Chat() {
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { text: userMessage, isUser: true }]);
+    
+    // Add user message to chat
+    const userMessageObj = { 
+      text: userMessage, 
+      isUser: true
+    };
+    setMessages(prev => [...prev, userMessageObj]);
     setIsLoading(true);
 
     try {
+      // Build context with clear role indicators
       const context = messages
         .map(msg => `${msg.isUser ? 'User' : 'Assistant'}: ${msg.text}`)
         .join('\n');
-      
-      const fullQuestion = context 
-        ? `Previous conversation:\n${context}\n\nCurrent question: ${userMessage}`
-        : userMessage;
 
-      const response = await askQuestion(fullQuestion);
-      const uniqueSources = response.sources.filter((source, index, self) =>
-        index === self.findIndex((s) => s.url === source.url)
-      );
-      
-      setMessages(prev => [...prev, { 
-        text: response.answer, 
+      const fullQuestion = context 
+        ? `Previous conversation:\n${context}\n\nUser: ${userMessage}`
+        : `User: ${userMessage}`;
+
+      // Create assistant message placeholder
+      const assistantMessageObj = { 
+        text: '', 
         isUser: false,
-        sources: uniqueSources
-      }]);
+        sources: []
+      };
+      setMessages(prev => [...prev, assistantMessageObj]);
+
+      const tempMessageIndex = messages.length + 1;
+
+      const { sources } = await askQuestionStream(fullQuestion, (chunk) => {
+        setMessages(prev => {
+          const newMessages = [...prev];
+          newMessages[tempMessageIndex] = {
+            ...newMessages[tempMessageIndex],
+            text: newMessages[tempMessageIndex].text + chunk,
+            isUser: false
+          };
+          return newMessages;
+        });
+      });
+
+      // Update sources after stream completes
+      setMessages(prev => {
+        const newMessages = [...prev];
+        newMessages[tempMessageIndex] = {
+          ...newMessages[tempMessageIndex],
+          isUser: false,
+          sources: sources?.slice(0, 4).filter((source, index, self) =>
+            index === self.findIndex((s) => s.url === source.url)
+          ) || []
+        };
+        return newMessages;
+      });
     } catch (error) {
       setMessages(prev => [...prev, { 
         text: "Sorry, I encountered an error. Please try again.", 
