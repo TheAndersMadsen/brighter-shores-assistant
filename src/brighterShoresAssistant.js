@@ -11,8 +11,8 @@ class BrighterShoresAssistant {
     constructor() {
         this.model = new ChatOpenAI({
             openAIApiKey: process.env.OPENAI_API_KEY,
-            modelName: "gpt-4-turbo-preview",
-            temperature: 0.2,
+            modelName: "gpt-3.5-turbo",
+            temperature: 0.5,
             systemMessage: `You are a dedicated Brighter Shores guide, designed to provide comprehensive and practical assistance to players. When answering questions, always structure your responses in the following way:
 
 LOCATION QUESTIONS
@@ -122,8 +122,8 @@ Remember: Players need practical, actionable information that helps them navigat
         }
 
         const retriever = this.vectorStore.asRetriever();
-        retriever.k = 15; // Increase the number of documents to retrieve
-        retriever.relevanceScoreCutoff = 0.7; // Adjust relevance score cutoff
+        retriever.k = 30; // Increase the number of documents to retrieve
+        retriever.relevanceScoreCutoff = 0.5; // Adjust relevance score cutoff
 
         const chain = RetrievalQAChain.fromLLM(
             this.model,
@@ -140,10 +140,12 @@ Remember: Players need practical, actionable information that helps them navigat
 
         return {
             answer: response.text,
-            sources: response.sourceDocuments.map(doc => ({
-                title: doc.metadata.title,
-                url: doc.metadata.url
-            }))
+            sources: response.sourceDocuments
+                .sort((a, b) => b.metadata.score - a.metadata.score) // Sort by relevance score
+                .map(doc => ({
+                    title: doc.metadata.title,
+                    url: doc.metadata.url
+                }))
         };
     }
 
