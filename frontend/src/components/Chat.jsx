@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   Box,
   Input,
@@ -24,6 +24,15 @@ function Chat() {
   });
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   useEffect(() => {
     localStorage.setItem('chatHistory', JSON.stringify(messages));
@@ -127,6 +136,7 @@ function Chat() {
             sources={message.sources}
           />
         ))}
+        <div ref={messagesEndRef} />
       </VStack>
       <Box 
         borderTop="1px solid" 
